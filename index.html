@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <title>Chat Spacehey</title>
+
+    <style>
+      /* ------------------------------------------- */
+      /* Estilos Globais e de Fundo */
+      /* ------------------------------------------- */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #e8e8e8;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      /* ------------------------------------------- */
+      /* Tela de Login Inicial */
+      /* ------------------------------------------- */
+      #login-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f0f0f0;
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #login-form {
+        background-color: white;
+        padding: 30px;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        text-align: center;
+      }
+
+      #login-form input, #login-form select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        font-size: 14px;
+      }
+
+      #login-form button {
+        background-color: #3a66e4;
+        color: white;
+        padding: 10px;
+        border: 1px solid #0e37a2;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        width: 100%;
+        border-radius: 0;
+      }
+      
+      /* ------------------------------------------- */
+      /* Container Principal do Chat (Aparece após o login) */
+      /* ------------------------------------------- */
+      #main-container {
+        width: 900px;
+        max-width: 100%;
+        margin: 20px 0;
+        display: none; /* INICIA ESCONDIDO, o JS mostra após o login */
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      /* ------------------------------------------- */
+      /* Barra Lateral (COLUNA DA ESQUERDA) */
+      /* ------------------------------------------- */
+      .sidebar {
+        width: 250px;
+        border-right: 1px solid #e0e0e0;
+        background-color: #f7f7f7;
+        padding: 10px;
+        display: flex;
+        flex-direction: column; 
+        justify-content: space-between; 
+      }
+      
+      .sidebar h2 {
+        font-size: 14px;
+        margin: 10px 0 10px 0;
+        padding: 5px 0;
+        border-bottom: 1px solid #ccc;
+        color: #333;
+        font-weight: bold;
+      }
+      
+      /* Item de chat Ativo (o que está selecionado) */
+      .chat-item-active {
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 5px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      }
+      
+      /* Item de chat Não Ativo (outros usuários) */
+      .chat-item {
+        padding: 5px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        border: 1px solid transparent; 
+      }
+      
+      .chat-item-active img, .chat-item img {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 8px;
+        border: 1px solid #999;
+      }
+      
+      .chat-item-active span, .chat-item span {
+        font-weight: bold;
+        color: #000000;
+      }
+
+      /* ------------------------------------------- */
+      /* Barra de Status "Conexão On-line" (Rodapé da Sidebar) */
+      /* ------------------------------------------- */
+      .status-bar {
+        padding: 3px 6px; 
+        font-size: 11px;
+        color: #000;
+        margin-top: 10px;
+        
+        /* Estilo de Botão Retangular */
+        background-color: #e0e0e0; 
+        border: 1px solid #999;
+        box-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5) inset;
+        
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .status-bar .conexao-text {
+        color: #333; 
+        font-weight: normal;
+      }
+
+      .status-bar .online {
+        font-weight: bold;
+        color: #000;
+        display: flex; 
+        align-items: center;
+      }
+      
+      .status-bar .online::before {
+        content: '';
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #00cc00; 
+        margin-right: 4px;
+        border: 1px solid #009900;
+      }
+
+      .status-bar .offline {
+        font-weight: bold;
+        color: #999;
+        display: inline;
+      }
+
+      /* ------------------------------------------- */
+      /* Área de Conversa Principal (COLUNA DA DIREITA) */
+      /* ------------------------------------------- */
+      .chat-area {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+      }
+
+      .chat-header {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        background-color: #fff;
+        font-weight: bold;
+        color: #333;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+      }
+      
+      .chat-header img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 10px;
+        border: 1px solid #999;
+      }
+
+      /* ------------------------------------------- */
+      /* Área de Mensagens (ul#mensagens) */
+      /* ------------------------------------------- */
+      #mensagens {
+        list-style-type: none;
+        padding: 15px;
+        margin: 0;
+        overflow-y: auto;
+        flex-grow: 1;
+        background-color: #fff;
+      }
+
+      /* ------------------------------------------- */
+      /* Estilo de Bolha de Mensagem (Geral) */
+      /* ------------------------------------------- */
+      #mensagens li {
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        border-radius: 5px; 
+        max-width: 70%;
+        font-size: 13px;
+        line-height: 1.3;
+        word-wrap: break-word;
+        clear: both; 
+      }
+
+      /* Mensagens dos OUTROS Usuários (Esquerda - Padrão) */
+      #mensagens li {
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        float: left;
+        color: #333;
+      }
+
+      /* SUAS Mensagens (Direita - Classe 'self-message') */
+      #mensagens li.self-message {
+        float: right;
+        background-color: #f0f0f0;
+        border-color: #ccc;
+        color: #000;
+      }
+
+      /* ------------------------------------------- */
+      /* Formulário de Envio (Inputs e Botão) */
+      /* ------------------------------------------- */
+      #chat-form {
+        padding: 10px 15px;
+        border-top: 1px solid #e0e0e0;
+        background-color: #f7f7f7;
+        display: block;
+      }
+
+      #chat-form input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        padding: 8px;
+        margin-bottom: 5px;
+        font-size: 13px;
+        border-radius: 0;
+      }
+
+      #chat-form button {
+        background-color: #3a66e4;
+        color: white;
+        padding: 8px 15px;
+        border: 1px solid #0e37a2;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        border-radius: 0;
+        margin-top: 5px;
+        width: 100%;
+      }
+
+      /* ------------------------------------------- */
+/* Estilos para o Carimbo de Data/Hora (Timestamp) */
+/* ------------------------------------------- */
+#mensagens li .message-content {
+  /* Garante que o texto da mensagem e o nome ocupem o espaço necessário */
+  display: block; 
+}
+
+#mensagens li .message-time {
+  display: block;
+  font-size: 10px; /* Fonte bem pequena */
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Alinha o timestamp à direita para suas próprias mensagens */
+#mensagens li.self-message .message-time {
+  text-align: right;
+}
+      
+      #chat-form button:hover {
+        background-color: #4b73f2;
+      }
+
+      /* Adicione no bloco <style> do index.html */
+
+/* Separa os campos de login para upload */
+#avatar-selection {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Esconde o select se um arquivo for escolhido, e vice-versa */
+#foto-input.hidden, #avatar-upload-input.hidden {
+  display: none !important;
+}
+    </style>
+  </head>
+  <body>
+    
+    <div id="login-screen">
+      <form id="login-form">
+          <h2>Escolha Seu Avatar e Nome</h2>
+          
+          <div id="avatar-selection">
+              
+              <p style="text-align: center; font-size: 12px; margin: 10px 0;">OU</p>
+  
+              <label for="avatar-upload-input" style="display: block; padding: 10px; border: 1px dashed #ccc; cursor: pointer; text-align: center;">
+                  Clique para enviar sua imagem
+              </label>
+              <input type="file" id="avatar-upload-input" name="avatar-file" accept="image/*" style="display: none;" />
+              
+              <p id="upload-status" style="font-size: 12px; color: #3a66e4; margin-top: 5px; display: none;">Arquivo pronto para envio.</p>
+  
+          </div>
+          
+          <input id="nome-login-input" placeholder="Seu nome de usuário" required autocomplete="off" />
+          <button type="submit">Entrar no Chat</button>
+      </form>
+  </div>
+    <div id="main-container">
+      <div class="sidebar">
+        <div>
+          <div class="chat-header">
+            <img id="my-profile-pic" src="https://via.placeholder.com/30" alt="Meu Perfil">
+            <span id="my-profile-name">Meu Perfil</span>
+          </div>
+          <br>
+          <h2>Todos os chats Favoritos</h2>
+          
+          <div id="active-users-list">
+            <div class="chat-item-active">
+              <span>public</span>
+              <span style="font-size: 11px; color: #666; margin-left: auto;">chat principal</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="status-bar">
+          <span class="conexao-text">Conexão:</span>
+          <span class="offline">Desconectado</span>
+          <span class="online">On-line</span>
+        </div>
+      </div>
+
+      <div class="chat-area">
+        <div class="chat-header">
+          public <span style="font-size: 11px; color: #666; margin-left: 10px;"></span>
+        </div>
+
+        <ul id="mensagens">
+        </ul>
+
+        <form id="chat-form">
+          <input id="mensagem" placeholder="Sua mensagem" autocomplete="off" required />
+          <button>Enviar</button>
+        </form>
+      </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+        
+            // Elementos do DOM
+            const mainContainer = document.getElementById('main-container');
+            const loginScreen = document.getElementById('login-screen');
+            const loginForm = document.getElementById('login-form');
+            const nomeLoginInput = document.getElementById('nome-login-input');
+            // const fotoInput = document.getElementById('foto-input'); <-- REMOVIDO!
+            const chatForm = document.getElementById('chat-form');
+            const mensagemInput = document.getElementById('mensagem');
+            const mensagens = document.getElementById('mensagens');
+            const activeUsersList = document.getElementById('active-users-list');
+            const myProfilePic = document.getElementById('my-profile-pic');
+            const myProfileName = document.getElementById('my-profile-name');
+            
+            const statusOnline = document.querySelector('.status-bar .online');
+            const statusOffline = document.querySelector('.status-bar .offline');
+        
+            // Elementos do DOM para Upload
+            const avatarFileInput = document.getElementById('avatar-upload-input');
+            const uploadStatus = document.getElementById('upload-status');
+            // const avatarSelect = document.getElementById('foto-input'); <-- REMOVIDO!
+        
+            // Variáveis do usuário logado (Declaradas uma única vez)
+            let userName = '';
+            let userPhoto = '';
+        
+            // Função auxiliar para formatar o timestamp
+            function formatTime(timestamp) {
+                const date = new Date(timestamp);
+                // Formato: HH:MM AM/PM
+                return date.toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                }).replace(' AM', ' am').replace(' PM', ' pm'); // Ajusta para minúsculas
+            }
+        
+        
+            // Evento para mostrar status quando um arquivo é selecionado
+            avatarFileInput.addEventListener('change', () => {
+                if (avatarFileInput.files.length > 0) {
+                    // avatarSelect.style.display = 'none'; // REMOVIDO
+                    uploadStatus.style.display = 'block';
+                    uploadStatus.textContent = `Arquivo selecionado: ${avatarFileInput.files[0].name}.`;
+                } else {
+                    // avatarSelect.style.display = 'block'; // REMOVIDO
+                    uploadStatus.style.display = 'none';
+                    uploadStatus.textContent = '';
+                }
+            });
+        
+        
+            // 1. LÓGICA DE LOGIN INICIAL (SUPORTA UPLOAD)
+            loginForm.addEventListener('submit', async event => {
+                event.preventDefault();
+                
+                userName = nomeLoginInput.value.trim();
+                if (!userName) return;
+        
+                // Define um avatar padrão se o upload não for usado
+                let photoUrl = 'https://via.placeholder.com/30/3a66e4/FFFFFF?text=ME';
+        
+                if (avatarFileInput.files.length > 0) {
+                    // Se houver um arquivo, fazemos o upload primeiro
+                    const file = avatarFileInput.files[0];
+                    const formData = new FormData();
+                    formData.append('avatar-file', file);
+                    
+                    uploadStatus.textContent = 'Enviando imagem...';
+                    
+                    try {
+                        // Envia o arquivo para a rota /upload do servidor
+                        const response = await fetch('/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            photoUrl = result.url; // Usa a URL retornada pelo servidor
+                            uploadStatus.textContent = 'Upload concluído! Entrando...';
+                        } else {
+                            alert('Erro no upload da imagem: ' + result.message);
+                            uploadStatus.textContent = 'Erro de upload.';
+                            // NÃO RETORNA: Permite que o usuário tente entrar com o avatar padrão em caso de erro de upload
+                        }
+                    } catch (error) {
+                        console.error('Erro ao enviar imagem:', error);
+                        alert('Erro de rede ou servidor ao enviar imagem. Tentando entrar com avatar padrão.');
+                        uploadStatus.textContent = 'Erro de rede.';
+                        // NÃO RETORNA: Permite que o usuário tente entrar com o avatar padrão em caso de erro de rede
+                    }
+                }
+        
+                // Continua com o login no Socket.IO usando a URL final
+                userPhoto = photoUrl;
+                
+                // Esconde a tela de login e mostra o chat
+                loginScreen.style.display = 'none';
+                mainContainer.style.display = 'flex';
+                
+                // Atualiza o perfil do usuário na sidebar
+                myProfileName.textContent = userName;
+                myProfilePic.src = userPhoto;
+        
+                // Envia o evento de login para o servidor
+                socket.emit('user login', { nome: userName, foto: userPhoto });
+            });
+        
+        
+            // 2. LÓGICA DE STATUS DE CONEXÃO
+            socket.on('connect', () => {
+                if (statusOnline && statusOffline) {
+                    statusOnline.style.display = 'flex';
+                    statusOffline.style.display = 'none';
+                }
+                if (userName) {
+                    socket.emit('user login', { nome: userName, foto: userPhoto });
+                }
+            });
+        
+            socket.on('disconnect', () => {
+                if (statusOnline && statusOffline) {
+                    statusOnline.style.display = 'none';
+                    statusOffline.style.display = 'inline';
+                }
+            });
+        
+        
+            // 3. LÓGICA DE ENVIO DE MENSAGEM
+            chatForm.addEventListener('submit', event => {
+                event.preventDefault();
+                const mensagem = mensagemInput.value.trim();
+                
+                if (mensagem && userName) { 
+                    socket.emit('chat message', { nome: userName, mensagem: mensagem });
+                    mensagemInput.value = '';
+                }
+            });
+        
+        
+            // 4. LÓGICA DE RECEBIMENTO DE MENSAGEM (Com Timestamp)
+            socket.on('chat message', dados => {
+                const lista = document.createElement('li');
+                
+                // Adiciona o conteúdo principal (Nome, Mensagem e Timestamp)
+                lista.innerHTML = `
+                    <span class="message-content">${dados.nome}: ${dados.mensagem}</span>
+                    <span class="message-time">${formatTime(dados.timestamp)}</span>
+                `;
+                
+                if (dados.nome === userName) {
+                    lista.classList.add('self-message');
+                }
+                
+                mensagens.appendChild(lista);
+                mensagens.scrollTop = mensagens.scrollHeight;
+            });
+        
+            // 5. ATUALIZAÇÃO DA LISTA DE USUÁRIOS ATIVOS
+            socket.on('active users', users => {
+                // Mantém o chat 'public' no topo
+                const publicChat = activeUsersList.querySelector('.chat-item-active');
+                activeUsersList.innerHTML = ''; 
+                if(publicChat) {
+                    activeUsersList.appendChild(publicChat);
+                }
+        
+                let otherUsersOnline = false;
+                users.forEach(user => {
+                    if (user.id !== socket.id) { 
+                        otherUsersOnline = true;
+                        const item = document.createElement('div');
+                        item.className = 'chat-item'; 
+                        item.innerHTML = `
+                            <img src="${user.foto}" alt="${user.nome} profile">
+                            <span>${user.nome}</span>
+                            <span style="font-size: 11px; color: #666; margin-left: auto;">online</span>
+                        `;
+                        activeUsersList.appendChild(item);
+                    }
+                });
+                
+                // Se não houver outros usuários online, mostra uma mensagem (se não houver outros itens além do 'public')
+                if (!otherUsersOnline && activeUsersList.children.length === 1) {
+                    const noUsersMessage = document.createElement('p');
+                    noUsersMessage.style = "padding: 5px; font-size: 12px; color: #666; text-align: center;";
+                    noUsersMessage.textContent = "Nenhum outro usuário online.";
+                    activeUsersList.appendChild(noUsersMessage);
+                }
+            });
+        </script>
+  </body>
+</html>
